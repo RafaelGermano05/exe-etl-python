@@ -4,6 +4,7 @@ from tkinter import filedialog
 from pathlib import Path
 from datetime import datetime
 
+
 def selecionar_arquivo():
 #    Abre uma janela para selecionar um arquivo CSV ou Excel.
     caminho_arquivo = filedialog.askopenfilename(
@@ -47,30 +48,35 @@ def processar_arquivo(caminho_arquivo):
     df.to_excel(caminho_saida, index=False)
     print(f"Arquivo salvo em: {caminho_saida}")
 
-def criar_interface():
-    # Cria uma interface gráfica simples com Tkinter(pretendo conhecer outra biblioteca para formatação de janela interativa de python)
-    janela = tk.Tk()
-    janela.title("Processador de Planilhas")
-    janela.geometry("600x250")
-    janela.configure(bg="#87CEEB")  # Azul claro
-    
-    botao = tk.Button(
-        janela, 
-        text="Selecionar Arquivo", 
-        command=selecionar_arquivo,
-        font=("Arial", 14, "bold"),
-        bg="#4CAF50",  # Verde
-        fg="white",
-        padx=20,
-        pady=10
-    )
-    botao.pack(pady=50)
-    
-    janela.mainloop()
+# Usei Tkinter mas pretendo conhecer outras bibliotecas para estilizar interface em python, sabe é o boss
+janela = tk.Tk()
+janela.title("Processador de Planilhas")
+janela.geometry("700x300") 
+janela.configure(bg="#00099b") 
 
-# Executa a interface
-try:
-    if __name__ == "__main__":
-        criar_interface()
-except Exception as e:
-    print(f"Ocorreu um erro: {e}")
+# funções para hover
+def on_enter(e):
+    botao_selecionar.config(bg="#487d5c")  
+
+def on_leave(e):
+    botao_selecionar.config(bg="#4CAF50")  
+
+botao_selecionar = tk.Button(
+    janela, 
+    text="Selecionar Planilha", 
+    command=selecionar_arquivo,
+    font=("Verdana", 17, "bold"),
+    bg="#4CAF50",  
+    fg="white",  
+    padx=55,
+    pady=30,
+    cursor="hand2"  
+)
+
+
+botao_selecionar.bind("<Enter>", on_enter)
+botao_selecionar.bind("<Leave>", on_leave)
+
+botao_selecionar.pack(pady=50)  
+
+janela.mainloop()
