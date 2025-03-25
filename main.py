@@ -1,12 +1,12 @@
 import pandas as pd
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from pathlib import Path
 from datetime import datetime
-
+from xlsxwriter import Workbook
 
 def selecionar_arquivo():
-#    Abre uma janela para selecionar um arquivo CSV ou Excel.
+    # Abre uma janela para selecionar um arquivo CSV ou Excel.
     caminho_arquivo = filedialog.askopenfilename(
         filetypes=[("Arquivos CSV", "*.csv"), ("Arquivos Excel", "*.xlsx")]
     )
@@ -15,46 +15,60 @@ def selecionar_arquivo():
         processar_arquivo(caminho_arquivo)
 
 def processar_arquivo(caminho_arquivo):
-    # Processa o arquivo selecionado e aplica transformações conforme o nome do arquivo.
+    # Criar pasta para armazenar arquivos tratados
+    pasta_saida = Path.home() / "Documentos" / "Planilhas_Tratadas"
+    pasta_saida.mkdir(parents=True, exist_ok=True)
+    
     nome_arquivo = Path(caminho_arquivo).stem
     
     if caminho_arquivo.endswith(".csv"):
-        df = pd.read_csv(caminho_arquivo, sep=";", encoding="utf-8")
+        df = pd.read_csv(caminho_arquivo, sep=",", encoding="utf-8")  # Alterado para separação por vírgulas
     elif caminho_arquivo.endswith(".xlsx"):
         df = pd.read_excel(caminho_arquivo)
     else:
-        print("Formato não suportado!")
+        messagebox.showerror("Erro", "Formato de arquivo não suportado!")
         return
     
-    
-    if "faturamento" in nome_arquivo:
-        df["Faturamento_M0"] = df["Faturamento_M0"].astype(str)
-        df["Faturamento_M1"] = df["Faturamento_M1"].astype(str)
-        df = df[df["Status"] != "Inativo"]
-        df.loc[df["Nome"] == "Empresa A", "Nome"] = "Empresa X"
-    
-    elif "faturamento1" in nome_arquivo:
-        df["Lucro"] = df["Receita_Mensal"] - df["Despesa_Mensal"]
-        df = df[df["Situação"] == "Ativo"]
-        df.rename(columns={"Empresa": "Nome_Empresa"}, inplace=True)
-    else:
-        print("Nenhuma transformação específica para esse arquivo.")
-    
-    #Usei o timestamp para renomear o arquivo de acordo com a data salva
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    caminho_saida = Path(caminho_arquivo).parent / f"{nome_arquivo}_tratado_{timestamp}.xlsx"
-    
-    
-    df.to_excel(caminho_saida, index=False)
-    print(f"Arquivo salvo em: {caminho_saida}")
+    # Aplicando transformações conforme o nome do arquivo
+    if "PARCEIRO ESTRATÉGICO_Principal_Tabla" in nome_arquivo:
+        for col in ['TPV M0', 'TPV M1', 'TPV M2']:
+            if col in df.columns:
+                df[col] = df[col].astype("str")
+        df.loc[df['SELLER'] == 'MODA 20', 'EXECUTIVO'] = 'PAULO RICARDO'
 
-# Usei Tkinter mas pretendo conhecer outras bibliotecas para estilizar interface em python, sabe é o boss
+    elif "PARCEIRO ESTRATÉGICO_2025 - Analítico" in nome_arquivo:
+        for col in ['TPV M0', 'TPV M1', 'TPV M2', 'TPV_PARCELADO_M0', 'TPV_PARCELADO_M1' ,'TPV_PARCELADO_M2', 'TPV_CREDITO_M0',
+                    'TPV_CREDITO_M1', 'TPV_CREDITO_M2', 'TPV_DEBITO_M0', 'TPV_DEBITO_M1', 'TPV_DEBITO_M2']:
+            if col in df.columns:
+                df[col] = df[col].astype("str")
+
+    elif "Visitas" in nome_arquivo:
+        df["Data"] = df["Data"].str.replace(" feb ","/02/")
+        df["Data"] = df["Data"].str.replace(" oct ","/10/")
+        df["Data"] = df["Data"].str.replace(" dic ","/12/")
+        df["Data"] = df["Data"].str.replace(" ene ","/01/")
+        df["Data"] = df["Data"].str.replace(" mar ","/03/")
+        df["Data"] = df["Data"].str.replace(" sept ","/09/")
+    else:
+        messagebox.showinfo("Aviso", "Nenhuma transformação específica para esse arquivo.")
+    
+    # usando timestamp pra nomear por data e horario de geração 
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    caminho_saida = pasta_saida / f"{nome_arquivo}_tratado_{timestamp}.xlsx"
+    
+    with pd.ExcelWriter(caminho_saida, engine="xlsxwriter") as writer:
+        df.to_excel(writer, sheet_name="Dados Processados", index=False)
+    
+    messagebox.showinfo("Sucesso", f"Arquivo salvo em:\n{caminho_saida}")
+
+# Criando a interface gráfica com Tkinter pretendo conhecer outros frames para interface
 janela = tk.Tk()
 janela.title("Processador de Planilhas")
 janela.geometry("700x300") 
 janela.configure(bg="#00099b") 
 
-# funções para hover
+# Funções para hover
+
 def on_enter(e):
     botao_selecionar.config(bg="#487d5c")  
 
@@ -72,7 +86,6 @@ botao_selecionar = tk.Button(
     pady=30,
     cursor="hand2"  
 )
-
 
 botao_selecionar.bind("<Enter>", on_enter)
 botao_selecionar.bind("<Leave>", on_leave)
